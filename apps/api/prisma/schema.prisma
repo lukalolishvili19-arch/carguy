@@ -1,0 +1,1626 @@
+// ============================================================================
+// CarGuy — Prisma Schema
+// PostgreSQL · fully normalized · production-ready
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum Role {
+  GUEST
+  USER
+  BUSINESS
+  MODERATOR
+  ADMIN
+}
+
+enum SubscriptionStatus {
+  NONE
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum PostType {
+  PHOTO
+  VIDEO
+  REEL
+  CAR_BUILD
+  RESTORATION
+  MAINTENANCE_TIP
+  QUESTION
+  POLL
+  SERVICE_RECOMMENDATION
+  NEWS_SHARE
+}
+
+enum PostVisibility {
+  PUBLIC
+  FOLLOWERS
+  PRIVATE
+}
+
+enum ReactionType {
+  LIKE
+  LOVE
+  FIRE
+  WOW
+  SAD
+  ANGRY
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  MENTION
+  MESSAGE
+  BOOKING
+  DISCOUNT
+  NEWS
+  REVIEW
+  EVENT
+  ACHIEVEMENT
+  SYSTEM
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+  BUSINESS
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  VOICE
+  FILE
+}
+
+enum ListingCategory {
+  CAR
+  MOTORCYCLE
+  PART
+  WHEEL
+  ACCESSORY
+  TOOL
+}
+
+enum ListingCondition {
+  NEW
+  USED
+  FOR_PARTS
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  SOLD
+  EXPIRED
+  REMOVED
+}
+
+enum Transmission {
+  MANUAL
+  AUTOMATIC
+  SEMI_AUTOMATIC
+  CVT
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  ELECTRIC
+  HYBRID
+  PLUGIN_HYBRID
+  LPG
+  HYDROGEN
+}
+
+enum DriveType {
+  FWD
+  RWD
+  AWD
+  FOUR_WD
+}
+
+enum BodyType {
+  SEDAN
+  HATCHBACK
+  SUV
+  COUPE
+  CONVERTIBLE
+  WAGON
+  PICKUP
+  VAN
+  MINIVAN
+  CROSSOVER
+}
+
+enum ServiceCategory {
+  MECHANIC
+  PAINT_SHOP
+  BODY_REPAIR
+  DETAILING
+  CAR_WASH
+  OIL_CHANGE
+  DIAGNOSTICS
+  ENGINE_REPAIR
+  TRANSMISSION
+  SUSPENSION
+  ELECTRICAL
+  AC_SERVICE
+  WHEEL_ALIGNMENT
+  TIRES
+  BATTERY
+  WRAPPING
+  CERAMIC_COATING
+  PPF
+  TUNING
+  EXHAUST
+  PERFORMANCE_PARTS
+  CAR_AUDIO
+  DEALERSHIP
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+  NO_SHOW
+}
+
+enum DiscountType {
+  SPECIAL_OFFER
+  COUPON
+  FLASH_SALE
+  SEASONAL
+  LOYALTY
+  REFERRAL
+}
+
+enum EventType {
+  CAR_MEET
+  CAR_SHOW
+  RACING
+  DRIFT
+  TRACK_DAY
+  PHOTO_CONTEST
+  LIVE_STREAM
+}
+
+enum RsvpStatus {
+  GOING
+  INTERESTED
+  NOT_GOING
+}
+
+enum ThreadStatus {
+  OPEN
+  CLOSED
+  ARCHIVED
+}
+
+enum ReputationReason {
+  POST_UPVOTED
+  ANSWER_ACCEPTED
+  THREAD_CREATED
+  COMMENT_UPVOTED
+  DAILY_LOGIN
+  BADGE_EARNED
+  ACHIEVEMENT_UNLOCKED
+  REVIEW_POSTED
+  BEST_ANSWER
+  MANUAL_ADJUSTMENT
+}
+
+enum BadgeTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  SPECIAL
+}
+
+enum MaintenanceType {
+  OIL_CHANGE
+  TIRE_ROTATION
+  TIRE_REPLACEMENT
+  BRAKE_SERVICE
+  BATTERY
+  FILTER
+  FLUID
+  INSPECTION
+  TIMING_BELT
+  SPARK_PLUGS
+  SUSPENSION
+  TRANSMISSION
+  OTHER
+}
+
+enum PlaceType {
+  MECHANIC
+  FUEL_STATION
+  EV_CHARGER
+  CAR_WASH
+  PARKING
+  DEALERSHIP
+  PARTS_SHOP
+  DETAILING
+}
+
+enum PolicyStatus {
+  QUOTED
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum ClaimStatus {
+  SUBMITTED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  PAID
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum ReportTargetType {
+  POST
+  COMMENT
+  USER
+  LISTING
+  REVIEW
+  BUSINESS
+  FORUM_THREAD
+  FORUM_POST
+  MESSAGE
+}
+
+// ============================================================================
+// AUTH & USERS
+// ============================================================================
+
+model User {
+  id                String       @id @default(cuid())
+  email             String       @unique
+  username          String       @unique
+  passwordHash      String?
+  role              Role         @default(USER)
+  emailVerified     Boolean      @default(false)
+  isActive          Boolean      @default(true)
+  isBanned          Boolean      @default(false)
+  lastLoginAt       DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  profile           Profile?
+  business          Business?
+  reputation        Reputation?
+  businessSubscription BusinessSubscription?
+  oauthAccounts     OAuthAccount[]
+  refreshTokens     RefreshToken[]
+
+  posts             Post[]
+  comments          Comment[]
+  reactions         Reaction[]
+  bookmarks         Bookmark[]
+  stories           Story[]
+  storyViews        StoryView[]
+  pollVotes         PollVote[]
+
+  following         Follow[]     @relation("Following")
+  followers         Follow[]     @relation("Followers")
+
+  conversations     ConversationMember[]
+  messages          Message[]
+  notifications     Notification[]
+
+  listings          Listing[]
+  listingFavorites  ListingFavorite[]
+
+  vehicles          Vehicle[]
+
+  bookings          Booking[]
+  reviews           Review[]
+
+  eventsHosted      Event[]      @relation("EventHost")
+  eventRsvps        EventRsvp[]
+
+  forumThreads      ForumThread[]
+  forumPosts        ForumPost[]
+  forumVotes        ForumVote[]
+  badges            UserBadge[]
+  achievements      UserAchievement[]
+  reputationLogs    ReputationLog[]
+
+  insurancePolicies InsurancePolicy[]
+  insuranceClaims   InsuranceClaim[]
+
+  aiConversations   AiConversation[]
+
+  reportsMade       Report[]     @relation("Reporter")
+  reportsResolved   Report[]     @relation("ReportResolver")
+
+  auditLogs         AuditLog[]
+
+  callsMade         CallSession[] @relation("CallCaller")
+  callsReceived     CallSession[] @relation("CallCallee")
+
+  @@index([role])
+  @@index([createdAt])
+}
+
+model CallSession {
+  id        String    @id @default(cuid())
+  callerId  String
+  caller    User      @relation("CallCaller", fields: [callerId], references: [id], onDelete: Cascade)
+  calleeId  String
+  callee    User      @relation("CallCallee", fields: [calleeId], references: [id], onDelete: Cascade)
+  video     Boolean   @default(true)
+  status    String    @default("RINGING") // RINGING | ACTIVE | REJECTED | ENDED
+  startedAt DateTime?
+  endedAt   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([callerId])
+  @@index([calleeId])
+  @@index([status])
+}
+
+model BusinessSubscription {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status             SubscriptionStatus @default(PENDING)
+  amount             Decimal            @default(10) @db.Decimal(10, 2)
+  currency           String             @default("GEL")
+  interval           String             @default("month")
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  lastPaidAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  payments           BusinessPayment[]
+
+  @@index([status])
+  @@index([currentPeriodEnd])
+}
+
+model BusinessPayment {
+  id             String               @id @default(cuid())
+  subscriptionId String
+  subscription   BusinessSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  amount         Decimal              @db.Decimal(10, 2)
+  currency       String               @default("GEL")
+  status         String               @default("PAID")
+  provider       String               @default("manual")
+  note           String?
+  paidAt         DateTime             @default(now())
+  createdAt      DateTime             @default(now())
+
+  @@index([subscriptionId])
+}
+
+model OAuthAccount {
+  id                String       @id @default(cuid())
+  provider          AuthProvider
+  providerAccountId String
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime     @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model RefreshToken {
+  id          String   @id @default(cuid())
+  tokenHash   String   @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent   String?
+  ipAddress   String?
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Profile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName    String
+  bio            String?
+  avatarUrl      String?
+  coverUrl       String?
+  location       String?
+  city           String?
+  country        String?
+  phone          String?
+  website        String?
+  birthDate      DateTime?
+  favoriteBrands String[]
+  favoriteCars   String[]
+  locale         String   @default("en")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  socialLinks    SocialLink[]
+}
+
+model SocialLink {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  platform  String
+  url       String
+
+  @@index([profileId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+// ============================================================================
+// BUSINESS (Directory / Service providers / Dealerships)
+// ============================================================================
+
+model Business {
+  id             String             @id @default(cuid())
+  ownerId        String             @unique
+  owner          User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name           String
+  slug           String             @unique
+  description    String
+  category       ServiceCategory
+  verification   VerificationStatus @default(UNVERIFIED)
+  logoUrl        String?
+  coverUrl       String?
+  email          String?
+  phone          String
+  website        String?
+  addressLine    String?
+  city           String
+  country        String?
+  latitude       Float?
+  longitude      Float?
+  supportedBrands  String[]         @default([])
+  supportedModels  String[]         @default([])
+  yearFrom         Int?
+  yearTo           Int?
+  capabilities     String[]         @default([])
+  ratingAvg      Float              @default(0)
+  ratingCount    Int                @default(0)
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  services       Service[]
+  workingHours   WorkingHour[]
+  gallery        BusinessMedia[]
+  certificates   Certificate[]
+  employees      Employee[]
+  socialLinks    BusinessSocialLink[]
+  bookings       Booking[]
+  reviews        Review[]
+  discounts      Discount[]
+  conversations  Conversation[]
+  place          Place?
+
+  @@index([category])
+  @@index([city])
+  @@index([verification])
+}
+
+model BusinessSocialLink {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  platform   String
+  url        String
+
+  @@index([businessId])
+}
+
+model WorkingHour {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int      // 0 = Sunday ... 6 = Saturday
+  openTime   String?  // "09:00"
+  closeTime  String?  // "18:00"
+  isClosed   Boolean  @default(false)
+
+  @@unique([businessId, dayOfWeek])
+}
+
+model BusinessMedia {
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  url        String
+  type       MediaType @default(IMAGE)
+  caption    String?
+  isBefore   Boolean?  // for before/after galleries
+  pairKey    String?   // groups before/after pairs
+  order      Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@index([businessId])
+}
+
+model Certificate {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  title      String
+  issuer     String?
+  imageUrl   String?
+  issuedAt   DateTime?
+
+  @@index([businessId])
+}
+
+model Employee {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  role       String?
+  avatarUrl  String?
+  bio        String?
+
+  @@index([businessId])
+}
+
+model Service {
+  id           String          @id @default(cuid())
+  businessId   String
+  business     Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  category     ServiceCategory
+  priceFrom    Decimal?        @db.Decimal(10, 2)
+  priceTo      Decimal?        @db.Decimal(10, 2)
+  durationMin  Int?            // estimated duration in minutes
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+
+  bookings     Booking[]
+
+  @@index([businessId])
+  @@index([category])
+}
+
+// ============================================================================
+// SOCIAL FEED
+// ============================================================================
+
+model Post {
+  id          String         @id @default(cuid())
+  authorId    String
+  author      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  type        PostType       @default(PHOTO)
+  visibility  PostVisibility @default(PUBLIC)
+  content     String?
+  location    String?
+  latitude    Float?
+  longitude   Float?
+  viewCount   Int            @default(0)
+  likeCount   Int            @default(0)
+  commentCount Int           @default(0)
+  shareCount  Int            @default(0)
+  isPinned    Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  media       PostMedia[]
+  comments    Comment[]
+  reactions   Reaction[]
+  bookmarks   Bookmark[]
+  hashtags    PostHashtag[]
+  mentions    PostMention[]
+  poll        Poll?
+
+  @@index([authorId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model PostMedia {
+  id        String    @id @default(cuid())
+  postId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  url       String
+  type      MediaType @default(IMAGE)
+  thumbnail String?
+  width     Int?
+  height    Int?
+  order     Int       @default(0)
+
+  @@index([postId])
+}
+
+model Hashtag {
+  id        String        @id @default(cuid())
+  tag       String        @unique
+  useCount  Int           @default(0)
+  createdAt DateTime      @default(now())
+  posts     PostHashtag[]
+
+  @@index([useCount])
+}
+
+model PostHashtag {
+  postId    String
+  post      Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtagId String
+  hashtag   Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, hashtagId])
+  @@index([hashtagId])
+}
+
+model PostMention {
+  postId          String
+  post            Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  mentionedUserId String
+
+  @@id([postId, mentionedUserId])
+  @@index([mentionedUserId])
+}
+
+model Poll {
+  id        String       @id @default(cuid())
+  postId    String       @unique
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  question  String
+  expiresAt DateTime?
+  options   PollOption[]
+}
+
+model PollOption {
+  id       String     @id @default(cuid())
+  pollId   String
+  poll     Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text     String
+  order    Int        @default(0)
+  votes    PollVote[]
+
+  @@index([pollId])
+}
+
+model PollVote {
+  id       String     @id @default(cuid())
+  optionId String
+  option   PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@unique([optionId, userId])
+  @@index([userId])
+}
+
+model Comment {
+  id         String     @id @default(cuid())
+  postId     String
+  post       Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content    String
+  imageUrl   String?
+  parentId   String?
+  parent     Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    Comment[]  @relation("CommentReplies")
+  likeCount  Int        @default(0)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  reactions  Reaction[]
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model Reaction {
+  id        String       @id @default(cuid())
+  type      ReactionType @default(LIKE)
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String?
+  post      Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId String?
+  comment   Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@index([postId])
+  @@index([commentId])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([userId])
+}
+
+model Story {
+  id        String      @id @default(cuid())
+  authorId  String
+  author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  mediaUrl  String
+  type      MediaType   @default(IMAGE)
+  caption   String?
+  expiresAt DateTime
+  createdAt DateTime    @default(now())
+
+  views     StoryView[]
+
+  @@index([authorId])
+  @@index([expiresAt])
+}
+
+model StoryView {
+  id       String   @id @default(cuid())
+  storyId  String
+  story    Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewerId String
+  viewer   User     @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+  viewedAt DateTime @default(now())
+
+  @@unique([storyId, viewerId])
+  @@index([viewerId])
+}
+
+// ============================================================================
+// MESSAGING
+// ============================================================================
+
+model Conversation {
+  id         String               @id @default(cuid())
+  type       ConversationType     @default(DIRECT)
+  title      String?
+  businessId String?
+  business   Business?            @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+
+  members    ConversationMember[]
+  messages   Message[]
+
+  @@index([businessId])
+}
+
+model ConversationMember {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt     DateTime?
+  isAdmin        Boolean      @default(false)
+  joinedAt       DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  type           MessageType  @default(TEXT)
+  content        String?
+  mediaUrl       String?
+  fileName       String?
+  durationSec    Int?         // for voice messages
+  isEdited       Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       NotificationType
+  title      String
+  body       String?
+  entityType String?
+  entityId   String?
+  actorId    String?
+  isRead     Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// MARKETPLACE
+// ============================================================================
+
+model Listing {
+  id           String            @id @default(cuid())
+  sellerId     String
+  seller       User              @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  title        String
+  slug         String            @unique
+  description  String
+  category     ListingCategory
+  condition    ListingCondition  @default(USED)
+  status       ListingStatus     @default(ACTIVE)
+  price        Decimal           @db.Decimal(12, 2)
+  currency     String            @default("GEL")
+  negotiable   Boolean           @default(false)
+
+  // Vehicle-specific (nullable for parts/accessories)
+  brand        String?
+  model        String?
+  year         Int?
+  mileage      Int?
+  transmission Transmission?
+  fuelType     FuelType?
+  driveType    DriveType?
+  bodyType     BodyType?
+  engineSize   Float?
+  color        String?
+  vin          String?
+  partNumber   String?
+  rimWidth     Float?
+  rimHeight    Float?
+  rimRadius    Int?
+
+  city         String?
+  country      String?
+  latitude     Float?
+  longitude    Float?
+
+  viewCount    Int               @default(0)
+  favoriteCount Int              @default(0)
+  expiresAt    DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  media        ListingMedia[]
+  favorites    ListingFavorite[]
+
+  @@index([category])
+  @@index([status])
+  @@index([brand, model])
+  @@index([price])
+  @@index([city])
+}
+
+model ListingMedia {
+  id        String    @id @default(cuid())
+  listingId String
+  listing   Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url       String
+  type      MediaType @default(IMAGE)
+  order     Int       @default(0)
+
+  @@index([listingId])
+}
+
+model ListingFavorite {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([listingId, userId])
+  @@index([userId])
+}
+
+// ============================================================================
+// GARAGE & VEHICLES
+// ============================================================================
+
+model Vehicle {
+  id            String    @id @default(cuid())
+  ownerId       String
+  owner         User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  nickname      String?
+  brand         String
+  model         String
+  year          Int
+  trim          String?
+  vin           String?
+  licensePlate  String?
+  color         String?
+  mileage       Int?
+  fuelType      FuelType?
+  transmission  Transmission?
+  purchaseDate  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  media         VehicleMedia[]
+  modifications Modification[]
+  maintenance   MaintenanceRecord[]
+  mileageLogs   MileageLog[]
+  reminders     MaintenanceReminder[]
+  bookings      Booking[]
+  insurance     InsurancePolicy[]
+
+  @@index([ownerId])
+}
+
+model VehicleMedia {
+  id        String    @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  url       String
+  type      MediaType @default(IMAGE)
+  order     Int       @default(0)
+
+  @@index([vehicleId])
+}
+
+model Modification {
+  id          String   @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  cost        Decimal? @db.Decimal(10, 2)
+  installedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([vehicleId])
+}
+
+model MaintenanceRecord {
+  id          String          @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle         @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  type        MaintenanceType
+  title       String
+  description String?
+  mileage     Int?
+  cost        Decimal?        @db.Decimal(10, 2)
+  performedAt DateTime
+  performedBy String?
+  createdAt   DateTime        @default(now())
+
+  @@index([vehicleId])
+  @@index([performedAt])
+}
+
+model MileageLog {
+  id        String   @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  mileage   Int
+  liters    Float?
+  cost      Decimal? @db.Decimal(10, 2)
+  recordedAt DateTime @default(now())
+
+  @@index([vehicleId])
+}
+
+model MaintenanceReminder {
+  id          String          @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle         @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  type        MaintenanceType
+  title       String
+  dueDate     DateTime?
+  dueMileage  Int?
+  isDone      Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+
+  @@index([vehicleId])
+  @@index([dueDate])
+}
+
+// ============================================================================
+// BOOKING
+// ============================================================================
+
+model Booking {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId  String
+  business    Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  serviceId   String?
+  service     Service?      @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  vehicleId   String?
+  vehicle     Vehicle?      @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  status      BookingStatus @default(PENDING)
+  scheduledAt DateTime
+  notes       String?
+  estimatedPrice Decimal?   @db.Decimal(10, 2)
+  finalPrice  Decimal?      @db.Decimal(10, 2)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  review      Review?
+
+  @@index([userId])
+  @@index([businessId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+// ============================================================================
+// REVIEWS
+// ============================================================================
+
+model Review {
+  id                String    @id @default(cuid())
+  authorId          String
+  author            User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  businessId        String
+  business          Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bookingId         String?   @unique
+  booking           Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  rating            Int       // overall 1-5
+  quality           Int?
+  price             Int?
+  professionalism   Int?
+  speed             Int?
+  communication     Int?
+  cleanliness       Int?
+  trustworthiness   Int?
+  comment           String?
+  isVerified        Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  media             ReviewMedia[]
+
+  @@unique([authorId, businessId, bookingId])
+  @@index([businessId])
+  @@index([rating])
+}
+
+model ReviewMedia {
+  id       String    @id @default(cuid())
+  reviewId String
+  review   Review    @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  url      String
+  type     MediaType @default(IMAGE)
+
+  @@index([reviewId])
+}
+
+// ============================================================================
+// DISCOUNTS
+// ============================================================================
+
+model Discount {
+  id           String       @id @default(cuid())
+  businessId   String
+  business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  type         DiscountType
+  title        String
+  description  String?
+  code         String?
+  percentOff   Int?
+  amountOff    Decimal?     @db.Decimal(10, 2)
+  imageUrl     String?
+  startsAt     DateTime     @default(now())
+  expiresAt    DateTime?
+  maxRedemptions Int?
+  redeemedCount Int         @default(0)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+
+  @@index([businessId])
+  @@index([type])
+  @@index([expiresAt])
+}
+
+// ============================================================================
+// NEWS
+// ============================================================================
+
+model NewsCategory {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  articles Article[]
+}
+
+model Article {
+  id           String        @id @default(cuid())
+  title        String
+  slug         String        @unique
+  excerpt      String?
+  content      String
+  coverUrl     String?
+  categoryId   String
+  category     NewsCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  authorName   String
+  source       String?
+  sourceUrl    String?
+  isPublished  Boolean       @default(false)
+  isEditorPick Boolean       @default(false)
+  isTrending   Boolean       @default(false)
+  viewCount    Int           @default(0)
+  publishedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  tags         ArticleTag[]
+
+  @@index([categoryId])
+  @@index([isPublished, publishedAt])
+}
+
+model ArticleTag {
+  id        String  @id @default(cuid())
+  articleId String
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag       String
+
+  @@index([articleId])
+  @@index([tag])
+}
+
+// ============================================================================
+// EVENTS
+// ============================================================================
+
+model Event {
+  id          String      @id @default(cuid())
+  hostId      String
+  host        User        @relation("EventHost", fields: [hostId], references: [id], onDelete: Cascade)
+  title       String
+  slug        String      @unique
+  description String?
+  type        EventType
+  coverUrl    String?
+  venue       String?
+  city        String?
+  country     String?
+  latitude    Float?
+  longitude   Float?
+  startsAt    DateTime
+  endsAt      DateTime?
+  ticketPrice Decimal?    @db.Decimal(10, 2)
+  ticketUrl   String?
+  capacity    Int?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  rsvps       EventRsvp[]
+
+  @@index([type])
+  @@index([startsAt])
+}
+
+model EventRsvp {
+  id        String     @id @default(cuid())
+  eventId   String
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    RsvpStatus @default(GOING)
+  createdAt DateTime   @default(now())
+
+  @@unique([eventId, userId])
+  @@index([userId])
+}
+
+// ============================================================================
+// FORUM & COMMUNITY
+// ============================================================================
+
+model ForumCategory {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  slug        String        @unique
+  description String?
+  icon        String?
+  order       Int           @default(0)
+  threads     ForumThread[]
+}
+
+model ForumThread {
+  id         String        @id @default(cuid())
+  categoryId String
+  category   ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title      String
+  slug       String        @unique
+  content    String
+  status     ThreadStatus  @default(OPEN)
+  isPinned   Boolean       @default(false)
+  viewCount  Int           @default(0)
+  voteScore  Int           @default(0)
+  replyCount Int           @default(0)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  posts      ForumPost[]
+  votes      ForumVote[]
+
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([voteScore])
+}
+
+model ForumPost {
+  id         String      @id @default(cuid())
+  threadId   String
+  thread     ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content    String
+  parentId   String?
+  parent     ForumPost?  @relation("ForumReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    ForumPost[] @relation("ForumReplies")
+  voteScore  Int         @default(0)
+  isAccepted Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  votes      ForumVote[]
+
+  @@index([threadId])
+  @@index([authorId])
+}
+
+model ForumVote {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  threadId  String?
+  thread    ForumThread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  postId    String?
+  post      ForumPost?   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  value     Int          // +1 or -1
+  createdAt DateTime     @default(now())
+
+  @@unique([userId, threadId])
+  @@unique([userId, postId])
+  @@index([threadId])
+  @@index([postId])
+}
+
+// ============================================================================
+// REPUTATION / GAMIFICATION
+// ============================================================================
+
+model Reputation {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  xp            Int      @default(0)
+  level         Int      @default(1)
+  isVerifiedMechanic Boolean @default(false)
+  isVerifiedBusiness Boolean @default(false)
+  updatedAt     DateTime @updatedAt
+}
+
+model ReputationLog {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason    ReputationReason
+  amount    Int
+  meta      String?
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Badge {
+  id          String      @id @default(cuid())
+  key         String      @unique
+  name        String
+  description String
+  icon        String?
+  tier        BadgeTier   @default(BRONZE)
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId  String
+  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+model Achievement {
+  id          String            @id @default(cuid())
+  key         String            @unique
+  name        String
+  description String
+  icon        String?
+  xpReward    Int               @default(0)
+  users       UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  progress      Int         @default(0)
+  unlockedAt    DateTime?
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+// ============================================================================
+// MAP / PLACES
+// ============================================================================
+
+model Place {
+  id         String    @id @default(cuid())
+  businessId String?   @unique
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  type       PlaceType
+  address    String?
+  city       String?
+  country    String?
+  latitude   Float
+  longitude  Float
+  phone      String?
+  ratingAvg  Float     @default(0)
+  isOpen24h  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([type])
+  @@index([city])
+}
+
+// ============================================================================
+// INSURANCE HUB
+// ============================================================================
+
+model InsuranceCompany {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  slug        String          @unique
+  logoUrl     String?
+  description String?
+  website     String?
+  phone       String?
+  ratingAvg   Float           @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+
+  plans       InsurancePlan[]
+}
+
+model InsurancePlan {
+  id           String            @id @default(cuid())
+  companyId    String
+  company      InsuranceCompany  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  monthlyPrice Decimal           @db.Decimal(10, 2)
+  yearlyPrice  Decimal?          @db.Decimal(10, 2)
+  currency     String            @default("GEL")
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+
+  coverages    InsuranceCoverage[]
+  policies     InsurancePolicy[]
+
+  @@index([companyId])
+}
+
+model InsuranceCoverage {
+  id       String        @id @default(cuid())
+  planId   String
+  plan     InsurancePlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  title    String
+  detail   String?
+  included Boolean       @default(true)
+  limit    Decimal?      @db.Decimal(12, 2)
+
+  @@index([planId])
+}
+
+model InsurancePolicy {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId        String
+  plan          InsurancePlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  vehicleId     String?
+  vehicle       Vehicle?      @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  status        PolicyStatus  @default(QUOTED)
+  policyNumber  String?       @unique
+  premium       Decimal       @db.Decimal(10, 2)
+  startDate     DateTime?
+  endDate       DateTime?
+  renewalReminderAt DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  claims        InsuranceClaim[]
+
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+}
+
+model InsuranceClaim {
+  id          String          @id @default(cuid())
+  policyId    String
+  policy      InsurancePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      ClaimStatus     @default(SUBMITTED)
+  title       String
+  description String
+  amount      Decimal?        @db.Decimal(12, 2)
+  incidentAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  documents   ClaimDocument[]
+
+  @@index([policyId])
+  @@index([userId])
+  @@index([status])
+}
+
+model ClaimDocument {
+  id       String         @id @default(cuid())
+  claimId  String
+  claim    InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  url      String
+  fileName String?
+  createdAt DateTime      @default(now())
+
+  @@index([claimId])
+}
+
+// ============================================================================
+// AI MECHANIC
+// ============================================================================
+
+model AiConversation {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  messages  AiMessage[]
+
+  @@index([userId])
+}
+
+model AiMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String         // "user" | "assistant" | "system"
+  content        String
+  imageUrl       String?
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId])
+}
+
+// ============================================================================
+// MODERATION / ADMIN
+// ============================================================================
+
+model Report {
+  id          String           @id @default(cuid())
+  reporterId  String
+  reporter    User             @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType  ReportTargetType
+  targetId    String
+  reason      String
+  details     String?
+  status      ReportStatus     @default(OPEN)
+  resolverId  String?
+  resolver    User?            @relation("ReportResolver", fields: [resolverId], references: [id], onDelete: SetNull)
+  resolutionNote String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([status])
+  @@index([targetType, targetId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([createdAt])
+}

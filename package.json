@@ -1,0 +1,29 @@
+{
+  "name": "carguy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CarGuy - All-in-one automotive platform (social, news, marketplace, services, community).",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:api": "pnpm --filter @carguy/api dev",
+    "dev:web": "pnpm --filter @carguy/web dev",
+    "dev:mobile": "cd apps/mobile && flutter run",
+    "build": "pnpm -r build",
+    "build:api": "pnpm --filter @carguy/api build",
+    "build:web": "pnpm --filter @carguy/web build",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:generate": "pnpm --filter @carguy/api prisma:generate",
+    "db:migrate": "pnpm --filter @carguy/api prisma:migrate",
+    "db:seed": "pnpm --filter @carguy/api prisma:seed",
+    "db:studio": "pnpm --filter @carguy/api prisma:studio"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  }
+}
